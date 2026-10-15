@@ -35,6 +35,7 @@ export function homeBuilding(s: Structure): Building {
 export function applyStructures(g: Game) {
   for (const s of g.settlement.structures) {
     const def = STRUCTURES[s.kind];
+    g.overworld.nodes = g.overworld.nodes.filter(n => !(n.tx>=s.x&&n.tx<s.x+def.w&&n.ty>=s.y&&n.ty<s.y+def.h));
     for (let y = 0; y < def.h; y++) for (let x = 0; x < def.w; x++) {
       g.overworld.tiles[(s.y + y) * W + s.x + x] = s.kind === 'home' ? (y < 2 ? T.ROOF : T.WALL) : T.FURNITURE;
     }
