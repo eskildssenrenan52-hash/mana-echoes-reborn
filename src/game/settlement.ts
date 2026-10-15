@@ -66,7 +66,7 @@ export function useWorldTool(g: Game, wx: number, wy: number) {
     g.toast(`+${mining ? 2 : 3} ${ITEMS[item].name}`); fx(ITEMS[item].color); return true;
   }
   if (g.tool === 'till') {
-    if (plot || SOLID.has(t) || ![T.GRASS, T.FLOWER, T.PATH, T.AUTUMN, T.MOSS].includes(t as 0) || BUILDINGS.some(b => Math.abs(x - b.x) < b.w && Math.abs(y - b.y) < b.h)) { g.toast('Escolha um terreno livre.'); return false; }
+    if (plot || SOLID.has(t) || ![T.GRASS, T.FLOWER, T.PATH, T.AUTUMN, T.MOSS].includes(t as 0) || BUILDINGS.some(b => x >= b.x && x < b.x+b.w && y >= b.y && y < b.y+b.h)) { g.toast('Escolha um terreno livre.'); return false; }
     g.settlement.plots.push({ x, y, crop: null, growth: 0, watered: false }); fx('#b78e62'); return true;
   }
   if (g.tool === 'seed') {

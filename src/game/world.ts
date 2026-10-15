@@ -195,7 +195,7 @@ export function generateWorld(): World {
   road([[140,202],[92,202],[48,202]],2);
   road([[48,202],[48,158],[24,158]],2);
   // A clear workshop meadow beside Potos, with reachable starter veins.
-  clear(143,130,7,T.GRASS);
+  clear(143,130,10,T.GRASS);
   for (const [x,y,item] of [[140,126,"iron_ore"],[142,126,"coal"],[145,126,"wood"],[146,128,"stone"]] as [number,number,string][]) {
     set(x,y,T.GRASS); nodes.push({id:id++,tx:x,ty:y,item,respawn:0});
   }

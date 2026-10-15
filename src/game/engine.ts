@@ -1,3 +1,4 @@
+import { WorldArt } from './world-art';
 import { freshSettlement, growPlots, useWorldTool, interactSettlement, renderSettlement, applyStructures, CARPENTRY_RECIPES, type Tool, type CropKind, type StructureKind } from "./settlement";
 import {
   BIOME_ENEMIES, BIOME_NAMES, BOSSES, ENEMIES, ITEMS, NPCS, QUESTS, RECIPES, SPIRITS, STATUES,
@@ -36,6 +37,7 @@ export interface Dialog { npc: NpcDef; text: string; choices: DialogChoice[] }
 
 export class Game {
   settlement = freshSettlement();
+  art = new WorldArt();
   terrainEdits: Record<string, number> = {};
   tool: Tool = 'explore';
   crop: CropKind = 'carrot';
@@ -963,7 +965,8 @@ export class Game {
       let v = Math.floor(hash(tx, ty, 1) * 4);
       if (t === T.WATER) v = (v + Math.floor(wt * 2)) % 4;
       if (t === T.LAVA) v = (v + Math.floor(wt * 3)) % 4;
-      c.drawImage(this.tiles[t][v], tx * TS, ty * TS);
+      const tree = [T.TREE,T.DTREE,T.AUTUMN_TREE,T.PALM].includes(t as 4);
+      c.drawImage(this.tiles[tree && this.art.canopy.complete && this.art.canopy.naturalWidth ? T.GRASS : t][v], tx * TS, ty * TS);
     }
     drawGroundDetails(c,this.world,x0,y0,x1,y1,wt);
     if(this.interior) {
@@ -994,6 +997,13 @@ export class Game {
     }
     // sprites sorted
     const draws: { y: number; f: () => void }[] = [];
+    if (!this.interior) {
+      for(let ty=y0-3;ty<=y1+3;ty++)for(let tx=x0-3;tx<=x1+3;tx++) {
+        const t=tileAt(this.world,tx,ty);
+        if([T.TREE,T.DTREE,T.AUTUMN_TREE,T.PALM].includes(t as 4))draws.push({y:ty*TS+16,f:()=>this.art.tree(c,t,tx,ty,wt)});
+      }
+      draws.push({y:111*TS,f:()=>this.art.village(c,wt)});
+    }
     for (const s of STATUES) {
       const x = s.tx * TS + 8, y = s.ty * TS + 14;
       if (x < cx - 20 || x > cx + VW + 20 || y < cy - 30 || y > cy + VH + 30) continue;
@@ -1089,6 +1099,7 @@ export class Game {
     if (dusk > 0 && this.biome !== "cave") { c.fillStyle = `rgba(255,120,40,${dusk * 0.15})`; c.fillRect(0, 0, VW, VH); }
     // weather
     if (!this.interior) this.renderWeather();
+    this.art.ambient(this,c);
     // floating text
     c.translate(-cx, -cy);
     c.font = "8px 'Press Start 2P', monospace";
