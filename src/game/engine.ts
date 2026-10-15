@@ -168,6 +168,7 @@ export class Game {
       [T.CAVE]: [70, 58, 96], [T.CWALL]: [20, 16, 32], [T.CRYSTAL]: [190, 120, 255], [T.COBBLE]: [180, 168, 150], [T.WALL]: [232, 220, 192],
       [T.ROOF]: [192, 72, 48], [T.PINE]: [40, 100, 70], [T.BUSH]: [110, 140, 50], [T.PILLAR]: [200, 184, 160], [T.BRIDGE]: [154, 106, 58],
       [T.DTREE]: [20, 80, 55], [T.CACTUS]: [60, 150, 60],
+      [T.AUTUMN]: [159,155,91], [T.AUTUMN_TREE]: [194,126,78], [T.MOSS]: [64,127,109], [T.PALM]: [61,137,101], [T.LAVA]: [223,119,78], [T.ASH]: [112,103,116], [T.MUSHROOM]: [177,132,187], [T.MEADOW]: [145,183,117], [T.RUINS]: [157,170,153],
     };
     for (let i = 0; i < W * H; i++) {
       const [r, g, b] = col[this.world.tiles[i]] ?? [0, 0, 0];

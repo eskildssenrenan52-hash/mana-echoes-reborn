@@ -14,3 +14,4 @@
 - Keep the original browser save key with backward-compatible settlement and terrain fields; this single-player game has no accounts or external database.
 - Use deterministic world generation for the expanded biome network so saved terrain coordinates remain stable.
 - Match the source game's indexed-access compiler behavior while keeping strict typing enabled; its fixed sprite palettes and tile arrays assume indexed values exist.
+- Render sourced world sprites through the browser-only WorldArt module with asset pointers and preserve their CC BY-SA attribution in the public game credits.

@@ -185,5 +185,5 @@ ITEMS["moon_seed"] = { id: "moon_seed", name: "Sementes da Lua", type: "material
 ITEMS["carrot"] = { id: "carrot", name: "Cenoura", type: "material", desc: "Recurso do mundo de Mana.", color: "#ef9c65", price: 4 };
 ITEMS["wheat"] = { id: "wheat", name: "Trigo", type: "material", desc: "Recurso do mundo de Mana.", color: "#e4c66e", price: 4 };
 ITEMS["moonflower"] = { id: "moonflower", name: "Flor da Lua", type: "material", desc: "Recurso do mundo de Mana.", color: "#c6b8ed", price: 4 };
-RECIPES.push({out:"iron_ingot",qty:1,station:"smith",cost:{iron_ore:3,coal:1},gold:0});
+RECIPES.push({out:"iron_ingot",qty:1,station:"smith",cost:{iron_ore:2,coal:1},gold:0});
 SHOP.push("carrot_seed", "wheat_seed", "moon_seed", "coal");
