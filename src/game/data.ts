@@ -1,3 +1,4 @@
+import { FRONTIER, type FrontierBiome } from './frontier';
 export type Slot = "weapon" | "armor" | "ring" | "amulet";
 export type WeaponKind = "sword" | "spear" | "bow" | "staff";
 export type ItemType = Slot | "potion" | "material";
@@ -103,8 +104,9 @@ export const ENEMIES: Record<EnemyKind, EnemyDef> = {
   shade: { kind: "shade", name: "Espírito Sombrio", hp: 120, atk: 24, def: 4, speed: 34, xp: 65, gold: 25, ranged: true, drops: [["mana_shard", 0.6], ["ether", 0.2], ["crystal_ore", 0.2]], size: 8 },
 };
 
-export type Biome = "plains" | "forest" | "desert" | "cave" | "mountain" | "autumn" | "swamp" | "coast" | "jungle" | "volcanic" | "mushroom" | "meadow" | "ruins";
+export type Biome = FrontierBiome | "plains" | "forest" | "desert" | "cave" | "mountain" | "autumn" | "swamp" | "coast" | "jungle" | "volcanic" | "mushroom" | "meadow" | "ruins";
 export const BIOME_NAMES: Record<Biome, string> = {
+  ...Object.fromEntries(Object.entries(FRONTIER).map(([id,d])=>[id,d.name])) as Record<FrontierBiome,string>,
   autumn: "Bosque de Âmbar", swamp: "Pântano dos Vagalumes", coast: "Costa de Candor", jungle: "Selva de Argaes", volcanic: "Caldeira de Kaore", mushroom: "Bosque dos Cogumelos", meadow: "Pradaria de Aethyra", ruins: "Ruínas de Artis",
   plains: "Planícies de Potos",
   forest: "Floresta Ancestral dos Espíritos",
@@ -113,6 +115,7 @@ export const BIOME_NAMES: Record<Biome, string> = {
   mountain: "Picos da Montanha Sagrada",
 };
 export const BIOME_ENEMIES: Record<Biome, EnemyKind[]> = {
+  ...Object.fromEntries(Object.entries(FRONTIER).map(([id,d])=>[id,[...d.enemies]])) as Record<FrontierBiome,EnemyKind[]>,
   autumn: ["goblin", "wolf"], swamp: ["sporeling", "shade"], coast: ["scorpion", "goblin"], jungle: ["sporeling", "goblin"], volcanic: ["golem", "shade"], mushroom: ["mushroom", "sporeling"], meadow: ["mushroom", "goblin"], ruins: ["golem", "shade"],
   plains: ["mushroom", "mushroom", "goblin"],
   forest: ["goblin", "sporeling", "sporeling"],

@@ -242,3 +242,47 @@ body {font-family:'DM Sans',sans-serif;letter-spacing:0;}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;}}
 
 @media(max-width:700px){.game-viewport>canvas{object-fit:fill}.game-viewport .absolute.bottom-2>button{width:36px;height:42px;font-size:6px}.game-viewport .absolute.bottom-2>div{height:42px;font-size:7px;padding:0 4px}.game-viewport .absolute.bottom-2>button>span:last-child{display:none}.game-viewport .absolute.bottom-2{gap:2px}.game-viewport .status-bar{width:74px}.game-viewport .status-bar>div:first-child{font-size:8px}}
+
+/* The world is the page. Every control lives inside its screen bounds. */
+html,body {margin:0;width:100%;height:100%;overflow:hidden;}
+.game-shell {padding:0;height:100dvh;min-height:0;}
+.game-layout {position:relative;width:100%;height:100%;max-width:none;}
+.game-layout .game-viewport {position:absolute;inset:0;width:100%;height:100%;max-height:none;aspect-ratio:auto;border:0;border-radius:0;box-shadow:none;}
+.game-layout .game-viewport:has(.title-screen),.game-layout .game-viewport:not(:has(.title-screen)){aspect-ratio:auto;}
+.game-location {position:absolute;z-index:5;left:16px;right:16px;top:144px;padding:0;pointer-events:none;}
+.game-location>span:first-child {background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:7px 9px;}
+.game-location>span:last-child {display:none;}
+.at-title .game-location,.at-title .game-toolbar {display:none;}
+.game-toolbar {position:absolute;z-index:12;bottom:12px;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 24px);padding:5px;background:var(--panel);border:1px solid var(--border);border-radius:5px;box-shadow:var(--shadow);gap:8px;}
+.toolbar-actions {gap:2px;flex-wrap:nowrap;}
+.toolbar-actions button,.settlement-dock button,.system-dock button {width:36px;height:38px;flex-shrink:0;}
+.settlement-dock {display:flex;gap:2px;border-left:1px solid var(--border);padding-left:8px;}
+.footer-chapter {display:none;}
+.toolbar-divider {margin:0 4px;}
+.control-sprite {position:relative;display:block;overflow:hidden;width:30px;height:30px;flex-shrink:0;image-rendering:pixelated;}
+.control-sprite img {position:absolute;width:400%;height:200%;max-width:none;}
+.control-cell-0{left:0;top:0}.control-cell-1{left:-100%;top:0}.control-cell-2{left:-200%;top:0}.control-cell-3{left:-300%;top:0}.control-cell-4{left:0;top:-100%}.control-cell-5{left:-100%;top:-100%}.control-cell-6{left:-200%;top:-100%}.control-cell-7{left:-300%;top:-100%}
+button:has(.control-sprite)>svg {display:none;}
+.spell-dock {bottom:76px;}
+.potion-button {width:42px;height:56px;display:flex;flex-direction:column;gap:2px;font-size:10px;}
+.quest-tracker {top:150px;}
+.game-toasts {top:190px;}
+.game-credits {position:absolute;z-index:6;bottom:14px;left:20px;font-size:10px;color:var(--muted-foreground);}
+.atlas-map {max-height:220px;overflow:hidden;}
+.atlas-marker {padding:0;width:12px;height:12px;min-height:0;font-size:8px;}
+.atlas-destinations {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:16px;}
+.atlas-destinations button {height:auto;min-height:38px;font-size:11px;white-space:normal;justify-content:flex-start;text-align:left;}
+.mobile-controls {position:absolute;z-index:10;left:12px;right:12px;bottom:140px;display:flex;pointer-events:none;align-items:flex-end;touch-action:none;padding:0;}
+.mobile-controls button {pointer-events:auto;width:44px;height:44px;background:var(--panel);border:1px solid var(--border);}
+.direction-controls {display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,44px);gap:3px;margin-right:auto;}
+.direction-controls button:nth-child(1){grid-column:2;grid-row:1}.direction-controls button:nth-child(2){grid-column:1;grid-row:2}.direction-controls button:nth-child(3){grid-column:2;grid-row:2}.direction-controls button:nth-child(4){grid-column:3;grid-row:2}
+@media(pointer:fine) and (min-width:701px){.mobile-controls{bottom:80px;opacity:.7}.direction-controls{display:none}.mobile-controls>button{width:38px;height:38px}.mobile-controls>button:first-of-type{margin-left:auto}}
+@media(max-width:700px){
+  .game-toolbar{width:calc(100% - 16px);max-width:none;flex-wrap:wrap;justify-content:center;bottom:8px;gap:2px;padding:4px;}
+  .toolbar-actions button,.settlement-dock button,.system-dock button{width:28px;height:32px;}
+  .toolbar-actions{gap:0}.toolbar-divider{margin:0 2px}.settlement-dock{padding-left:4px;gap:0}.control-sprite{width:26px;height:26px}
+  .spell-dock{bottom:102px;gap:2px}.spell-dock>button{width:35px;height:42px;font-size:7px;padding:2px}.spell-dock>button>span:last-child{display:none}.spell-dock .potion-button>span:last-child{display:block}
+  .mobile-controls{bottom:160px}.game-location{top:113px;left:8px;right:8px;font-size:9px}.game-toasts{top:152px;max-width:65%}
+  .title-content{left:8%;right:8%;max-width:500px}.game-title{font-size:48px}.game-title em{font-size:56px}.title-eyebrow{font-size:7px}.title-subtitle{font-size:8px}.title-actions{flex-wrap:wrap}.start-button,.continue-button{height:42px;font-size:12px}
+  .modal-overlay{padding:8px}.modal-content{padding:14px}.atlas-destinations{grid-template-columns:1fr}.modal-content .grid-cols-6{grid-template-columns:repeat(4,minmax(0,1fr))}
+}

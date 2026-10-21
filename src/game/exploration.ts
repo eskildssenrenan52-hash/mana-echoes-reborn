@@ -1,5 +1,6 @@
 import type { World } from './world';
 import { W, H, TS, T, SOLID, hash } from './world';
+import { LEGACY_W, LEGACY_H, FRONTIER_GATES } from './frontier';
 
 export interface Building { id: string; name: string; x: number; y: number; w: number; h: number; kind: 'home' | 'inn' | 'smith' | 'alchemy' | 'library' | 'ruin'; resident?: string; secret?: boolean; note: string }
 export const BUILDINGS: Building[] = [
@@ -20,7 +21,8 @@ export const doorOf = (b: Building) => ({ tx: b.x + Math.floor(b.w / 2), ty: b.y
 export interface Treasure { id: string; tx: number; ty: number; gold: number; item: string; qty: number; name: string }
 export const TREASURES: Treasure[] = [
   { id: 'village-well', tx: 127, ty: 136, gold: 25, item: 'potion', qty: 2, name: 'O presente do viajante' },
-  ...Array.from({ length: 35 }, (_, i) => ({ id: `wild-${i}`, tx: 15 + Math.floor(hash(i, 7, 81) * (W - 35)), ty: 12 + Math.floor(hash(i, 3, 42) * (H - 30)), gold: 35 + i * 7, item: ['ether', 'hi_potion', 'mana_shard', 'crystal_ore', 'elixir'][i % 5], qty: i % 3 + 1, name: ['Cache dos peregrinos', 'Herança dos antigos', 'Relíquia entre raízes', 'Tesouro da lua', 'O segredo do explorador'][i % 5] })),
+  ...Array.from({ length: 35 }, (_, i) => ({ id: `wild-${i}`, tx: 15 + Math.floor(hash(i, 7, 81) * (LEGACY_W - 35)), ty: 12 + Math.floor(hash(i, 3, 42) * (LEGACY_H - 30)), gold: 35 + i * 7, item: ['ether', 'hi_potion', 'mana_shard', 'crystal_ore', 'elixir'][i % 5], qty: i % 3 + 1, name: ['Cache dos peregrinos', 'Herança dos antigos', 'Relíquia entre raízes', 'Tesouro da lua', 'O segredo do explorador'][i % 5] })),
+  ...FRONTIER_GATES.map((g,i)=>({id:`cache-${g.id}`,tx:g.tx+6,ty:g.ty+5,gold:75+i*15,item:'mana_shard',qty:3,name:`Relíquia: ${g.name}`})),
 ];
 export const ROOM = { left: 106, top: 94, width: 27, height: 17, spawnX: 119 * TS + 8, spawnY: 108 * TS + 8, exitX: 119, exitY: 110 };
 export function createInterior(b: Building): World {

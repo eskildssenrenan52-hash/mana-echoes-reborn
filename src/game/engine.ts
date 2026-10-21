@@ -1,4 +1,5 @@
 import { WorldArt } from './world-art';
+import { FRONTIER, FRONTIER_GATES, LEGACY_W, LEGACY_H, type FrontierBiome } from './frontier';
 import { freshSettlement, growPlots, useWorldTool, interactSettlement, renderSettlement, applyStructures, CARPENTRY_RECIPES, type Tool, type CropKind, type StructureKind } from "./settlement";
 import {
   BIOME_ENEMIES, BIOME_NAMES, BOSSES, ENEMIES, ITEMS, NPCS, QUESTS, RECIPES, SPIRITS, STATUES,
@@ -12,7 +13,7 @@ import { Audio } from "./audio";
 
 export const VW = 480;
 export const VH = 270;
-const TIER: Record<Biome, number> = { autumn: 2, swamp: 3, coast: 2, jungle: 3, volcanic: 5, mushroom: 2, meadow: 1, ruins: 4, plains: 1, forest: 2, desert: 3, mountain: 4, cave: 5 };
+const TIER: Record<Biome, number> = { ...Object.fromEntries(Object.entries(FRONTIER).map(([id,d])=>[id,d.tier])) as Record<FrontierBiome,number>, autumn: 2, swamp: 3, coast: 2, jungle: 3, volcanic: 5, mushroom: 2, meadow: 1, ruins: 4, plains: 1, forest: 2, desert: 3, mountain: 4, cave: 5 };
 const BOSS_LOOK: Record<string, { kind: EnemyKind; tint: string; scale: number }> = {
   king_mush: { kind: "mushroom", tint: "#c02090", scale: 2.6 },
   ent: { kind: "sporeling", tint: "#2a7a2a", scale: 2.8 },
@@ -36,6 +37,14 @@ export interface DialogChoice { label: string; act: () => void }
 export interface Dialog { npc: NpcDef; text: string; choices: DialogChoice[] }
 
 export class Game {
+  get viewWidth() { return this.canvas.width; }
+  get viewHeight() { return this.canvas.height; }
+  resize(width:number,height:number) {
+    this.canvas.width=width;this.canvas.height=height;this.light.width=width;this.light.height=height;
+    this.ctx.imageSmoothingEnabled=false;this.lctx.imageSmoothingEnabled=false;
+    for(const f of this.weather){f.x=Math.random()*width;f.y=Math.random()*height;}
+  }
+  frontierSector = "";
   settlement = freshSettlement();
   art = new WorldArt();
   terrainEdits: Record<string, number> = {};
@@ -117,7 +126,7 @@ export class Game {
     this.ctx = context;
     this.ctx.imageSmoothingEnabled = false;
     this.light = document.createElement("canvas");
-    this.light.width = VW; this.light.height = VH;
+    this.light.width = this.viewWidth; this.light.height = this.viewHeight;
     const lightContext = this.light.getContext("2d");
     if (!lightContext) throw new Error("Iluminação indisponível");
     this.lctx = lightContext;
@@ -127,7 +136,7 @@ export class Game {
     this.tiles = buildTiles();
     this.buildMinimap();
     this.spawnEnemies();
-    for (let i = 0; i < 120; i++) this.weather.push({ x: Math.random() * VW, y: Math.random() * VH, s: Math.random() });
+    for (let i = 0; i < 120; i++) this.weather.push({ x: Math.random() * this.viewWidth, y: Math.random() * this.viewHeight, s: Math.random() });
     const p = this.p;
     p.hp = this.maxHp(); p.mp = this.maxMp();
   }
@@ -170,6 +179,9 @@ export class Game {
       [T.DTREE]: [20, 80, 55], [T.CACTUS]: [60, 150, 60],
       [T.AUTUMN]: [159,155,91], [T.AUTUMN_TREE]: [194,126,78], [T.MOSS]: [64,127,109], [T.PALM]: [61,137,101], [T.LAVA]: [223,119,78], [T.ASH]: [112,103,116], [T.MUSHROOM]: [177,132,187], [T.MEADOW]: [145,183,117], [T.RUINS]: [157,170,153],
     };
+    for(const d of Object.values(FRONTIER)){
+      const hex=d.base;col[d.ground]=[parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16)];
+    }
     for (let i = 0; i < W * H; i++) {
       const [r, g, b] = col[this.world.tiles[i]] ?? [0, 0, 0];
       img.data[i * 4] = r; img.data[i * 4 + 1] = g; img.data[i * 4 + 2] = b; img.data[i * 4 + 3] = 255;
@@ -192,7 +204,7 @@ export class Game {
     let tries = 0;
     while (this.enemies.length < 260 && tries < 20000) {
       tries++;
-      const tx = 4 + Math.floor(Math.random() * (W - 8)), ty = 4 + Math.floor(Math.random() * (H - 8));
+      const tx = 4 + Math.floor(Math.random() * (LEGACY_W - 8)), ty = 4 + Math.floor(Math.random() * (LEGACY_H - 8));
       const t = tileAt(this.world, tx, ty);
       if (t === T.WATER || t === T.COBBLE || solidAt(this.world, tx * TS + 8, ty * TS + 8)) continue;
       if (Math.hypot(tx - 122, ty - 126) < 18) continue;
@@ -209,6 +221,27 @@ export class Game {
       e.boss = { def: b, active: false, phase: 1, patT: 2, charge: 0, cvx: 0, cvy: 0 };
       this.enemies.push(e);
     }
+  }
+
+  populateFrontier() {
+    if(this.interior || (this.p.x<TS*LEGACY_W&&this.p.y<TS*LEGACY_H))return;
+    const sx=Math.floor(this.p.x/TS/32),sy=Math.floor(this.p.y/TS/24),key=`${sx},${sy}`;
+    if(key===this.frontierSector)return;this.frontierSector=key;
+    this.enemies=this.enemies.filter(e=>e.boss || (e.hx<TS*LEGACY_W&&e.hy<TS*LEGACY_H) || Math.hypot(e.x-this.p.x,e.y-this.p.y)<600);
+    for(let i=0;i<22;i++){
+      const tx=sx*32-16+Math.floor(hash(i,sx,sy+31)*64),ty=sy*24-12+Math.floor(hash(i,sy,sx+51)*48);
+      if(tx<3||ty<3||tx>=W-3||ty>=H-3||Math.hypot(tx*TS-this.p.x,ty*TS-this.p.y)<100||solidAt(this.world,tx*TS+8,ty*TS+8))continue;
+      if(this.enemies.some(e=>Math.hypot(e.hx-tx*TS-8,e.hy-ty*TS-8)<30))continue;
+      const b=biomeOf(this.world,tx*TS,ty*TS),pool=BIOME_ENEMIES[b];
+      this.enemies.push(this.makeEnemy(pool[i%pool.length],tx*TS+8,ty*TS+8,TIER[b]));
+    }
+  }
+  travelFrontier(id:string) {
+    const gate=FRONTIER_GATES.find(g=>g.id===id);if(!gate)return;
+    if(this.interior)this.leaveInterior();
+    this.p.x=gate.tx*TS+8;this.p.y=(gate.ty+2)*TS+8;this.clearTransition();
+    this.biome=gate.biome;this.audio.biome=gate.biome;this.biomeBanner={name:gate.name,t:3};
+    this.populateFrontier();this.save();
   }
 
   // ---------- helpers ----------
@@ -658,7 +691,7 @@ export class Game {
     if (!right && this.tool !== "explore") { this.useTool(wx,wy); return; }
     if (!right && useWorldTool(this,wx,wy)) return;
     // minimap
-    if (sx > VW - 78 && sy < 58) { this.onMapClick?.(); return; }
+    if (sx > this.viewWidth - 78 && sy < 58) { this.onMapClick?.(); return; }
     if (this.interior && (right)) return;
     if (right) { this.cast(this.p.spell); return; }
     const npc = this.localNpcs.find((n) => Math.hypot(n.tx * TS + 8 - wx, n.ty * TS - wy) < 14);
@@ -707,6 +740,7 @@ export class Game {
     if (b !== this.biome) { this.biome = b; this.biomeBanner = { name: BIOME_NAMES[b], t: 3 }; this.audio.biome = b; }
     if (this.biomeBanner.t > 0) this.biomeBanner.t -= dt;
 
+    this.populateFrontier();
     // movement
     let ix = 0, iy = 0;
     const k = this.keys;
@@ -952,22 +986,24 @@ export class Game {
   // ---------- render ----------
   render() {
     const c = this.ctx, p = this.p;
-    this.cam.x = Math.max(0, Math.min(W * TS - VW, p.x - VW / 2));
-    this.cam.y = Math.max(0, Math.min(H * TS - VH, p.y - VH / 2));
+    this.cam.x = Math.max(0, Math.min(W * TS - this.viewWidth, p.x - this.viewWidth / 2));
+    this.cam.y = Math.max(0, Math.min(H * TS - this.viewHeight, p.y - this.viewHeight / 2));
     const sx = this.shake > 0 ? (Math.random() - 0.5) * this.shake : 0, sy = this.shake > 0 ? (Math.random() - 0.5) * this.shake : 0;
     const cx = Math.round(this.cam.x + sx), cy = Math.round(this.cam.y + sy);
     c.setTransform(1, 0, 0, 1, 0, 0);
-    c.fillStyle = "#000"; c.fillRect(0, 0, VW, VH);
+    c.fillStyle = "#000"; c.fillRect(0, 0, this.viewWidth, this.viewHeight);
     c.translate(-cx, -cy);
-    const x0 = Math.floor(cx / TS), y0 = Math.floor(cy / TS), x1 = x0 + Math.ceil(VW / TS) + 1, y1 = y0 + Math.ceil(VH / TS) + 1;
+    const x0 = Math.floor(cx / TS), y0 = Math.floor(cy / TS), x1 = x0 + Math.ceil(this.viewWidth / TS) + 1, y1 = y0 + Math.ceil(this.viewHeight / TS) + 1;
     const wt = this.clock;
     for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) {
       const t = tileAt(this.world, tx, ty);
       let v = Math.floor(hash(tx, ty, 1) * 4);
       if (t === T.WATER) v = (v + Math.floor(wt * 2)) % 4;
       if (t === T.LAVA) v = (v + Math.floor(wt * 3)) % 4;
+      const b=biomeOf(this.world,tx*TS,ty*TS),frontier=b in FRONTIER?FRONTIER[b as FrontierBiome]:null;
       const tree = [T.TREE,T.DTREE,T.AUTUMN_TREE,T.PALM].includes(t as 4);
-      c.drawImage(this.tiles[tree && this.art.canopy.complete && this.art.canopy.naturalWidth ? T.GRASS : t][v], tx * TS, ty * TS);
+      const ground=frontier&&t===frontier.obstacle&&this.art.frontier.naturalWidth?frontier.ground:tree&&this.art.canopy.naturalWidth?T.GRASS:t;
+      c.drawImage(this.tiles[ground][v], tx * TS, ty * TS);
     }
     drawGroundDetails(c,this.world,x0,y0,x1,y1,wt);
     if(this.interior) {
@@ -1001,18 +1037,26 @@ export class Game {
     if (!this.interior) {
       for(let ty=y0-3;ty<=y1+3;ty++)for(let tx=x0-3;tx<=x1+3;tx++) {
         const t=tileAt(this.world,tx,ty);
-        if([T.TREE,T.DTREE,T.AUTUMN_TREE,T.PALM].includes(t as 4))draws.push({y:ty*TS+16,f:()=>this.art.tree(c,t,tx,ty,wt)});
+        if(!(biomeOf(this.world,tx*TS,ty*TS) in FRONTIER)&&[T.TREE,T.DTREE,T.AUTUMN_TREE,T.PALM].includes(t as 4))draws.push({y:ty*TS+16,f:()=>this.art.tree(c,t,tx,ty,wt)});
       }
+      for(let ty=y0-3;ty<=y1+3;ty++)for(let tx=x0-3;tx<=x1+3;tx++){
+        const b=biomeOf(this.world,tx*TS,ty*TS);
+        if(b in FRONTIER && tileAt(this.world,tx,ty)===FRONTIER[b as FrontierBiome].obstacle){
+          draws.push({y:ty*TS+16,f:()=>this.art.frontierObject(c,b as FrontierBiome,tx,ty,wt)});
+        }
+      }
+      for(const gate of FRONTIER_GATES)if(gate.tx>=x0-2&&gate.tx<=x1+2&&gate.ty>=y0-2&&gate.ty<=y1+2)
+        draws.push({y:gate.ty*TS+16,f:()=>drawStatue(c,gate.tx*TS+8,gate.ty*TS+14,true,wt)});
       draws.push({y:111*TS,f:()=>this.art.village(c,wt)});
     }
     for (const s of STATUES) {
       const x = s.tx * TS + 8, y = s.ty * TS + 14;
-      if (x < cx - 20 || x > cx + VW + 20 || y < cy - 30 || y > cy + VH + 30) continue;
+      if (x < cx - 20 || x > cx + this.viewWidth + 20 || y < cy - 30 || y > cy + this.viewHeight + 30) continue;
       draws.push({ y, f: () => drawStatue(c, x, y, this.statues.has(s.id), wt) });
     }
     for (const n of this.localNpcs) {
       const x = n.tx * TS + 8, y = n.ty * TS + 14;
-      if (x < cx - 20 || x > cx + VW + 20 || y < cy - 30 || y > cy + VH + 30) continue;
+      if (x < cx - 20 || x > cx + this.viewWidth + 20 || y < cy - 30 || y > cy + this.viewHeight + 30) continue;
       const near = Math.hypot(x - p.x, y - p.y) < 30;
       const hasQ = this.availableQuest(n.id) || QUESTS.some((q) => q.giver === n.id && this.questReady(q));
       draws.push({ y, f: () => {
@@ -1021,7 +1065,7 @@ export class Game {
       } });
     }
     for (const e of this.enemies) {
-      if (this.interior || !e.alive || e.x < cx - 40 || e.x > cx + VW + 40 || e.y < cy - 40 || e.y > cy + VH + 50) continue;
+      if (this.interior || !e.alive || e.x < cx - 40 || e.x > cx + this.viewWidth + 40 || e.y < cy - 40 || e.y > cy + this.viewHeight + 50) continue;
       draws.push({ y: e.y, f: () => {
         if (e.boss) {
           const look = BOSS_LOOK[e.boss.def.id];
@@ -1064,9 +1108,9 @@ export class Game {
     if (dark > 0.02) {
       const l = this.lctx;
       l.globalCompositeOperation = "source-over";
-      l.clearRect(0, 0, VW, VH);
+      l.clearRect(0, 0, this.viewWidth, this.viewHeight);
       l.fillStyle = this.biome === "cave" ? `rgba(8,4,20,${dark})` : `rgba(10,12,40,${dark})`;
-      l.fillRect(0, 0, VW, VH);
+      l.fillRect(0, 0, this.viewWidth, this.viewHeight);
       l.globalCompositeOperation = "destination-out";
       const hole = (x: number, y: number, r: number, a = 1) => {
         const g = l.createRadialGradient(x - cx, y - cy, 0, x - cx, y - cy, r);
@@ -1097,7 +1141,7 @@ export class Game {
     c.setTransform(1, 0, 0, 1, 0, 0);
     // dusk tint
     const dusk = Math.max(0, 1 - Math.abs(this.time - 0.75) * 12) + Math.max(0, 1 - Math.abs(this.time - 0.25) * 12);
-    if (dusk > 0 && this.biome !== "cave") { c.fillStyle = `rgba(255,120,40,${dusk * 0.15})`; c.fillRect(0, 0, VW, VH); }
+    if (dusk > 0 && this.biome !== "cave") { c.fillStyle = `rgba(255,120,40,${dusk * 0.15})`; c.fillRect(0, 0, this.viewWidth, this.viewHeight); }
     // weather
     if (!this.interior) this.renderWeather();
     this.art.ambient(this,c);
@@ -1114,8 +1158,8 @@ export class Game {
     c.setTransform(1, 0, 0, 1, 0, 0);
     if (!this.interior) this.renderMinimap();
     this.renderInteractionPrompt(c);
-    if(this.transition>0){c.fillStyle=`rgba(13,24,25,${Math.min(1,this.transition*1.5)})`;c.fillRect(0,0,VW,VH);}
-    if (p.dead > 0) { c.fillStyle = `rgba(0,0,0,${Math.min(0.8, (2.5 - p.dead))})`; c.fillRect(0, 0, VW, VH); }
+    if(this.transition>0){c.fillStyle=`rgba(13,24,25,${Math.min(1,this.transition*1.5)})`;c.fillRect(0,0,this.viewWidth,this.viewHeight);}
+    if (p.dead > 0) { c.fillStyle = `rgba(0,0,0,${Math.min(0.8, (2.5 - p.dead))})`; c.fillRect(0, 0, this.viewWidth, this.viewHeight); }
   }
   renderInteractionPrompt(c: CanvasRenderingContext2D) {
     const p=this.p, near=(x:number,y:number,r=30)=>Math.hypot(p.x-x*TS-8,p.y-y*TS-8)<r;
@@ -1134,42 +1178,42 @@ export class Game {
     if(!text&&this.nearNpc(26))text='E · Conversar';
     if(!text)return;
     c.font='8px monospace';c.textAlign='center';const width=c.measureText(text).width+18;
-    c.fillStyle='#152d2f';c.fillRect(VW/2-width/2,VH-46,width,16);c.strokeStyle='#bfa87b';c.strokeRect(VW/2-width/2,VH-46,width,16);c.fillStyle='#f1e5c7';c.fillText(text,VW/2,VH-35);
+    c.fillStyle='#152d2f';c.fillRect(this.viewWidth/2-width/2,this.viewHeight-46,width,16);c.strokeStyle='#bfa87b';c.strokeRect(this.viewWidth/2-width/2,this.viewHeight-46,width,16);c.fillStyle='#f1e5c7';c.fillText(text,this.viewWidth/2,this.viewHeight-35);
   }
   renderWeather() {
     const c = this.ctx, dt = this.lastDelta;
     if (this.biome === "mountain") {
-      c.fillStyle = "rgba(230,240,255,0.12)"; c.fillRect(0, 0, VW, VH);
+      c.fillStyle = "rgba(230,240,255,0.12)"; c.fillRect(0, 0, this.viewWidth, this.viewHeight);
       c.fillStyle = "#ffffff";
       for (const f of this.weather) {
         f.y += (20 + f.s * 30) * dt; f.x += Math.sin(this.clock + f.s * 10) * 0.3 - 0.2;
-        if (f.y > VH) { f.y = -2; f.x = Math.random() * VW; } if (f.x < 0) f.x = VW;
+        if (f.y > this.viewHeight) { f.y = -2; f.x = Math.random() * this.viewWidth; } if (f.x < 0) f.x = this.viewWidth;
         c.fillRect(f.x, f.y, f.s > 0.6 ? 2 : 1, f.s > 0.6 ? 2 : 1);
       }
     } else if (this.biome === "desert") {
-      c.fillStyle = "rgba(255,200,120,0.08)"; c.fillRect(0, 0, VW, VH);
+      c.fillStyle = "rgba(255,200,120,0.08)"; c.fillRect(0, 0, this.viewWidth, this.viewHeight);
       c.fillStyle = "rgba(240,210,150,0.6)";
-      for (const f of this.weather.slice(0, 40)) { f.x += (80 + f.s * 80) * dt; f.y += Math.sin(this.clock * 2 + f.s * 7) * 0.2; if (f.x > VW) { f.x = 0; f.y = Math.random() * VH; } c.fillRect(f.x, f.y, 3, 1); }
+      for (const f of this.weather.slice(0, 40)) { f.x += (80 + f.s * 80) * dt; f.y += Math.sin(this.clock * 2 + f.s * 7) * 0.2; if (f.x > this.viewWidth) { f.x = 0; f.y = Math.random() * this.viewHeight; } c.fillRect(f.x, f.y, 3, 1); }
     } else if ((this.biome === "forest" || this.biome === "plains") && this.raining) {
-      c.fillStyle = "rgba(20,30,60,0.15)"; c.fillRect(0, 0, VW, VH);
+      c.fillStyle = "rgba(20,30,60,0.15)"; c.fillRect(0, 0, this.viewWidth, this.viewHeight);
       c.fillStyle = "rgba(170,200,255,0.6)";
-      for (const f of this.weather) { f.y += 300 * dt; f.x -= 60 * dt; if (f.y > VH) { f.y = -5; f.x = Math.random() * (VW + 60); } c.fillRect(f.x, f.y, 1, 5); }
+      for (const f of this.weather) { f.y += 300 * dt; f.x -= 60 * dt; if (f.y > this.viewHeight) { f.y = -5; f.x = Math.random() * (this.viewWidth + 60); } c.fillRect(f.x, f.y, 1, 5); }
     } else if (this.biome === "forest") {
       // fireflies
       for (const f of this.weather.slice(0, 25)) {
-        const x = (f.x + Math.sin(this.clock * 0.7 + f.s * 20) * 20) % VW, y = (f.y + Math.cos(this.clock * 0.5 + f.s * 30) * 15) % VH;
+        const x = (f.x + Math.sin(this.clock * 0.7 + f.s * 20) * 20) % this.viewWidth, y = (f.y + Math.cos(this.clock * 0.5 + f.s * 30) * 15) % this.viewHeight;
         c.fillStyle = `rgba(200,255,140,${0.4 + Math.sin(this.clock * 3 + f.s * 50) * 0.4})`; c.fillRect(x, y, 1, 1);
       }
     } else if (this.biome === "cave") {
       for (const f of this.weather.slice(0, 30)) {
-        f.y -= 6 * dt; if (f.y < 0) f.y = VH;
+        f.y -= 6 * dt; if (f.y < 0) f.y = this.viewHeight;
         c.fillStyle = `rgba(200,150,255,${0.3 + Math.sin(this.clock * 2 + f.s * 40) * 0.3})`; c.fillRect(f.x, f.y, 1, 1);
       }
     }
   }
   renderMinimap() {
     const c = this.ctx, p = this.p;
-    const mw = 72, mh = 52, mx = VW - mw - 4, my = 4;
+    const mw = 72, mh = 52, mx = this.viewWidth - mw - 4, my = 4;
     c.fillStyle = "#1a1030"; c.fillRect(mx - 2, my - 2, mw + 4, mh + 4);
     c.fillStyle = "#d0b060"; c.fillRect(mx - 1, my - 1, mw + 2, 1); c.fillRect(mx - 1, my + mh, mw + 2, 1); c.fillRect(mx - 1, my, 1, mh); c.fillRect(mx + mw, my, 1, mh);
     const ptx = p.x / TS, pty = p.y / TS;

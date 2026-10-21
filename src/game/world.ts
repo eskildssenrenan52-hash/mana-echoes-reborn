@@ -1,7 +1,8 @@
 import { BOSSES, NPCS, STATUES, type Biome } from "./data";
+import { FRONTIER, FRONTIER_KEYS, FRONTIER_GATES, LEGACY_W, LEGACY_H, WORLD_SCALE, frontierBiomeAt } from './frontier';
 
-export const W = 320;
-export const H = 240;
+export const W = LEGACY_W * WORLD_SCALE;
+export const H = LEGACY_H * WORLD_SCALE;
 export const TS = 16;
 
 export const T = {
@@ -30,7 +31,7 @@ export interface World {
   biomes: Uint8Array;
   nodes: Node[];
 }
-export const BIOME_LIST: Biome[] = ["plains", "forest", "desert", "cave", "mountain", "autumn", "swamp", "coast", "jungle", "volcanic", "mushroom", "meadow", "ruins"];
+export const BIOME_LIST: Biome[] = ["plains", "forest", "desert", "cave", "mountain", "autumn", "swamp", "coast", "jungle", "volcanic", "mushroom", "meadow", "ruins", ...FRONTIER_KEYS];
 
 function biomeAt(x: number, y: number): Biome {
   const nx = (noise(x / 12, y / 12, 3) - 0.5) * 16;
@@ -52,7 +53,7 @@ export function generateWorld(): World {
   const set = (x: number, y: number, t: number) => { if (x >= 0 && y >= 0 && x < W && y < H) tiles[y * W + x] = t; };
   const get = (x: number, y: number) => (x < 0 || y < 0 || x >= W || y >= H ? T.WATER : tiles[y * W + x]);
 
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+  for (let y = 0; y < LEGACY_H; y++) for (let x = 0; x < LEGACY_W; x++) {
     const b = biomeAt(x, y);
     biomes[y * W + x] = BIOME_LIST.indexOf(b);
     const n = fbm(x / 9, y / 9, 11);
@@ -92,7 +93,7 @@ export function generateWorld(): World {
       t = c > 0.5 ? T.CAVE : T.CWALL;
       if (t === T.CAVE && r > 0.975) t = T.CRYSTAL;
     }
-    if (x < 3 || y < 3 || x >= W - 3 || y >= H - 3) t = b === "cave" ? T.CWALL : T.WATER;
+    if (x < 3 || y < 3 || x >= LEGACY_W - 3 || y >= LEGACY_H - 3) t = b === "cave" ? T.CWALL : T.WATER;
     tiles[y * W + x] = t;
   }
 
@@ -149,7 +150,7 @@ export function generateWorld(): World {
     const r = hash(i, 7, 77);
     cx += r < 0.25 ? 1 : r < 0.5 ? -1 : 0;
     cy += r >= 0.5 && r < 0.75 ? 1 : r >= 0.75 ? -1 : 0;
-    cx = Math.max(172, Math.min(W - 5, cx)); cy = Math.max(5, Math.min(70, cy));
+    cx = Math.max(172, Math.min(LEGACY_W - 5, cx)); cy = Math.max(5, Math.min(70, cy));
     if (BIOME_LIST[biomes[cy * W + cx]] !== "cave") { cx = 200; cy = 40; }
   }
 
@@ -173,7 +174,7 @@ export function generateWorld(): World {
   // resource nodes
   const nodes: Node[] = [];
   let id = 0;
-  for (let y = 4; y < H - 4; y++) for (let x = 4; x < W - 4; x++) {
+  for (let y = 4; y < LEGACY_H - 4; y++) for (let x = 4; x < LEGACY_W - 4; x++) {
     const t = tiles[y * W + x];
     if (SOLID.has(t) || t === T.COBBLE || t === T.PATH) continue;
     const r = hash(x, y, 555);
@@ -198,6 +199,27 @@ export function generateWorld(): World {
   clear(143,130,10,T.GRASS);
   for (const [x,y,item] of [[140,126,"iron_ore"],[142,126,"coal"],[145,126,"wood"],[146,128,"stone"]] as [number,number,string][]) {
     set(x,y,T.GRASS); nodes.push({id:id++,tx:x,ty:y,item,respawn:0});
+  }
+  // Lightweight 80×60 terrain sectors: legacy generation is unchanged and
+  // expensive noise is evaluated per sector, not across 7.68 million tiles.
+  for(let sy=0;sy<H;sy+=60)for(let sx=0;sx<W;sx+=80){
+    if(sx<LEGACY_W&&sy<LEGACY_H)continue;
+    const biome=frontierBiomeAt(sx+40,sy+30), d=FRONTIER[biome], bid=BIOME_LIST.indexOf(biome);
+    for(let y=sy;y<sy+60;y++)for(let x=sx;x<sx+80;x++){
+      const r=hash(x,y,777), trail=Math.abs(x%320-160)<=2||Math.abs(y%240-120)<=2;
+      let tile:number=trail?T.PATH:r>.965?d.obstacle:d.ground;
+      if(x<3||y<3||x>=W-3||y>=H-3)tile=T.WATER;
+      tiles[y*W+x]=tile;biomes[y*W+x]=bid;
+      if(x%32===8&&y%24===8&&!SOLID.has(tile))nodes.push({id:id++,tx:x,ty:y,item:r<.35?'iron_ore':d.resource,respawn:0});
+    }
+  }
+  // Open two old boundary crossings and join the continuous frontier road grid.
+  road([[290,205],[320,205],[350,205],[350,120],[480,120]],2);
+  road([[140,202],[160,235],[160,360]],2);
+  for(const gate of FRONTIER_GATES){
+    clear(gate.tx,gate.ty,4,FRONTIER[gate.biome].ground);
+    for(let y=-6;y<=6;y++)for(let x=-6;x<=6;x++)biomes[(gate.ty+y)*W+gate.tx+x]=BIOME_LIST.indexOf(gate.biome);
+    nodes.push({id:id++,tx:gate.tx+4,ty:gate.ty+3,item:FRONTIER[gate.biome].resource,respawn:0});
   }
   return { tiles, biomes, nodes };
 }
