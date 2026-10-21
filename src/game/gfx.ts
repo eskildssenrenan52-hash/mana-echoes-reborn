@@ -1,4 +1,5 @@
 import { T, TS, hash } from "./world";
+import { FRONTIER } from './frontier';
 import type { EnemyKind, Palette, WeaponKind } from "./data";
 
 type Ctx = CanvasRenderingContext2D;
@@ -7,7 +8,7 @@ const px = (c: Ctx, x: number, y: number, w: number, h: number, col: string) => 
 /** Builds 4 variants per tile type as 16x16 canvases. */
 export function buildTiles(): HTMLCanvasElement[][] {
   const out: HTMLCanvasElement[][] = [];
-  for (let t = 0; t <= 34; t++) {
+  for (let t = 0; t <= 51; t++) {
     const vars: HTMLCanvasElement[] = [];
     for (let v = 0; v < 4; v++) {
       const cv = document.createElement("canvas");
@@ -41,6 +42,8 @@ function treeShape(c: Ctx, leaf: string, dark: string, light: string, trunk: str
 }
 
 function drawTile(c: Ctx, t: number, v: number) {
+  const terrain=Object.values(FRONTIER).find(d=>d.ground===t);
+  if(terrain){speckle(c,terrain.base,[...terrain.flecks],v,.22);return;}
   switch (t) {
     case T.AUTUMN: speckle(c,"#98a15d",["#d2ad66","#bb8a54","#719055"],v,.28);break;
     case T.AUTUMN_TREE: treeShape(c,"#c37a4d","#8a5144","#e8b66c","#665247","#98a15d","#819252",v);break;
