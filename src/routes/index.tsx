@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -209,7 +210,7 @@ function AccountPanel({ user, name, onName, onClose }: { user: User | null; name
     if (error) setMsg("Não foi possível salvar."); else { onName(n); setMsg("Nome salvo!"); }
   };
 
-  return (
+  return createPortal(
     <div className="account-backdrop" onClick={onClose}>
       <div className="account-card" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Conta">
         <button className="account-close" onClick={onClose} aria-label="Fechar">✕</button>
@@ -240,6 +241,7 @@ function AccountPanel({ user, name, onName, onClose }: { user: User | null; name
         )}
         {msg && <p className="account-msg">{msg}</p>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
