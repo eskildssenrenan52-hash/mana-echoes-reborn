@@ -15,7 +15,7 @@ import { Game, VW, VH } from "@/game/engine";
 import { ITEMS, QUESTS, SPIRITS, STATUES, SHOP, type Slot, type Stats } from "@/game/data";
 import { drawChar, drawItemIcon } from "@/game/gfx";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/mana")({
   head: () => ({
     meta: [
       { title: "Mana Echoes — Crônicas de um mundo vivo" },
