@@ -20,9 +20,9 @@ import { drawChar, drawItemIcon } from "@/odyssey/gfx";
 export const Route = createFileRoute("/odyssey")({
   head: () => ({
     meta: [
-      { title: "Mana Echoes — Crônicas de um mundo vivo" },
+      { title: "Jogar Golden Arrow Odyssey — A Crônica do Cântico Partido" },
       { name: "description", content: "Explore Mana Quest: um mundo 16-bit com casas acessíveis, santuários secretos, tesouros, chefes e espíritos de mana." },
-      { property: "og:title", content: "Mana Echoes — Crônicas de um mundo vivo" },
+      { property: "og:title", content: "Jogar Golden Arrow Odyssey" },
       { property: "og:description", content: "Explore um mundo 100 vezes maior com 30 biomas, cultive e construa seu lar." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

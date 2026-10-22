@@ -388,3 +388,5 @@ button:has(.control-sprite)>svg {display:none;}
 .account-msg{font-size:13px;text-align:center;color:var(--gold);margin:4px 0 0}
 .account-mail{text-align:center;opacity:.7;font-size:13px;margin:0}
 @media(prefers-reduced-motion:reduce){.intro-root *{animation-duration:.01s!important}}
+.cut-line{animation-name:lineInC}.title-menu{animation-name:lineInC}
+@keyframes lineInC{from{opacity:0;transform:translate(-50%,10px);filter:blur(3px)}to{opacity:1;transform:translateX(-50%);filter:none}}

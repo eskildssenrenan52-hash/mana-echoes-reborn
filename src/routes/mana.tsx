@@ -18,7 +18,7 @@ import { drawChar, drawItemIcon } from "@/game/gfx";
 export const Route = createFileRoute("/mana")({
   head: () => ({
     meta: [
-      { title: "Mana Echoes — Crônicas de um mundo vivo" },
+      { title: "Jogar Mana Echoes — Crônicas de um mundo vivo" },
       { name: "description", content: "Explore Mana Quest: um mundo 16-bit com casas acessíveis, santuários secretos, tesouros, chefes e espíritos de mana." },
       { property: "og:title", content: "Mana Echoes — Crônicas de um mundo vivo" },
       { property: "og:description", content: "Explore um mundo 100 vezes maior com 30 biomas, cultive e construa seu lar." },
